@@ -70,7 +70,7 @@ class ContactView(viewsets.ModelViewSet):
         data = list(reader) 
         print(data)
         contact_list=[]
-        
+        contact_dict=[]
         for row in data:
           
             print(row)
@@ -104,7 +104,8 @@ class ContactView(viewsets.ModelViewSet):
                             updated_at=j['updated_at']
                             )
                         )
-            obj1=list(Contacts.objects.bulk_create(contact_list))
+			contact_dict.append(j)
+            obj1=(Contacts.objects.bulk_create(contact_list))
             
-            return JsonResponse(obj,safe=False)
+            return JsonResponse(contact_dict)
             
