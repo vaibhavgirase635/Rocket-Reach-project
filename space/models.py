@@ -13,6 +13,7 @@ from .managers import CustomUserManager
 class CustomUser(AbstractBaseUser, PermissionsMixin):
     full_name = models.CharField(max_length=100, default=False)
     email = models.EmailField(unique=True)
+    
     password = models.CharField(max_length=12)
     confirm_password = models.CharField(max_length=12)
 
@@ -90,12 +91,6 @@ class User_Profile(models.Model):
     def __str__(self):
         return "{}".format(self.full_name)
 
-class MyFile(models.Model):
-    csvfile = models.FileField(blank=False, null=False,upload_to='images/')
-    
-    class Meta:
-        verbose_name_plural = 'MyFiles'
-
 class Contacts(models.Model):
     full_name = models.CharField(max_length=200)
     stream = models.CharField(max_length=200,choices=faculty_type)
@@ -115,10 +110,32 @@ class Contacts(models.Model):
     DOB = models.DateField() 
     profile_photo = models.ImageField(upload_to='register/image', blank=True)
     location = models.CharField(max_length=200,null=True)
+    tokens = models.IntegerField(default=5) 
+    subscription=models.IntegerField(default=0)
     created_at=models.DateTimeField(auto_now_add=True)
     updated_at=models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return "{}".format(self.full_name)
 
+class Pricing_Plan(models.Model):
+    
+    tokens=models.IntegerField(default=0)
+    subscription=models.IntegerField(default=0)
+    created_at=models.DateTimeField(auto_now_add=True)
+    updated_at=models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return "{}".format(self.subscription)
+
+class Purchased_Subcription(models.Model):
+    user_name=models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
+    subscription=models.ForeignKey(Pricing_Plan, on_delete=models.CASCADE, null=True, blank=True)
+
+    def __str__(self):
+        return "{}".format(self.user_name)
+
+class Tokens(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
+    tokens = models.IntegerField(default=5)
 

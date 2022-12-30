@@ -83,16 +83,22 @@ class AuthTokenSerializer(serializers.Serializer):
         attrs['user'] = user
         return attrs
 
-from rest_framework import serializers
-from .models import MyFile
-
-
-class MyFileSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = MyFile
-        fields = ('id','csvfile')
-
 class ContactSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contacts
         fields = "__all__"
+
+class PricingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model= Pricing_Plan
+        fields = ['tokens','subscription','created_at','updated_at']
+
+class Purchased_Subcription_Serializer(serializers.ModelSerializer):
+    class Meta:
+        model= Purchased_Subcription
+        fields = ['user_name','subscription']
+
+class TokenSerializer(serializers.ModelSerializer):
+    class Meta:
+        model= Tokens
+        fields = ['user','tokens']
