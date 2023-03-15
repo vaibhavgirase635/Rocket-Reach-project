@@ -83,7 +83,7 @@ class User_Profile(models.Model):
     alt_phone = models.IntegerField(blank=False)
     gender = models.CharField(max_length=100,choices=gender)
     DOB = models.DateField() 
-    profile_photo = models.ImageField(upload_to='register/image', blank=True)
+    profile_photo = models.ImageField(upload_to='images', blank=True)
     location = models.CharField(max_length=200,null=True)
     created_at=models.DateTimeField(auto_now_add=True)
     updated_at=models.DateTimeField(auto_now=True)
@@ -139,3 +139,36 @@ class Tokens(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
     tokens = models.IntegerField(default=5)
 
+CATEGORY_CHOICES = (
+    ('M','Mobile'),
+    ('L','Laptop'),
+    ('TW','Top Wear'),
+    ('BW','Bottom Wear'),
+    ('A','Atta'),
+    ('C','Chhola'),
+    ('CO','Cooking Oil'),
+    ('K','Kitchen'),
+    ('R','Rice'),
+    ('DP','Dal/Pulses'),
+    ('N','Nuts'),
+    ('P','Pasta & Noodles'),
+    ('SO','Special Offer')
+)
+
+
+
+
+
+
+
+class Product(models.Model):
+    title=models.CharField(max_length=100)
+    selling_price=models.FloatField()
+    discounted_price=models.FloatField()
+    description=models.TextField()
+    brand=models.CharField(max_length=100)
+    
+    specifications = models.TextField(null=True, blank=True)
+
+    def __str__(self):
+        return str(self.id)

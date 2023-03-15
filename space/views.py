@@ -19,6 +19,9 @@ from itertools import islice
 from rest_framework.permissions import AllowAny
 from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import redirect
+from django.views.decorators.csrf import csrf_protect
+from django.shortcuts import render,HttpResponse,redirect
+from django.db.models import Q
 
 fs = FileSystemStorage(location='tmp/')
 
@@ -53,11 +56,16 @@ class UserProfileView(ListCreateAPIView):
     filter_backends = [SearchFilter]
     search_fields = ['id','full_name','stream','school','job_title','company','email','linkdin','Twitter','github','location']
 
+    # def get(self, request, id, *args, **kwargs):
+    #     self.object = self.get_object(id=id)
+    #     return Response({'user': self.object}, template_name='profile.html')
+
 class ContactView(viewsets.ModelViewSet):
     
     queryset = Contacts.objects.all()
     serializer_class = ContactSerializer
     
+
     @action(detail=False, methods=['POST'])
     def upload_data(self, request):
         """Upload data from CSV"""
@@ -112,32 +120,74 @@ class ContactView(viewsets.ModelViewSet):
             
             return Response(contact_dict)
 
+class ProductView(viewsets.ModelViewSet):
+    
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
+    
+
+    @action(detail=False, methods=['POST'])
+    def upload_data(self, request):
+        """Upload data from CSV"""
+        file = request.FILES["file"]
+
+        content = file.read()  # these are bytes
+        file_content = ContentFile(content)
+        file_name = fs.save("_tmp.csv", file_content)
+        tmp_file = fs.path(file_name)
+        csv_file = open(tmp_file, errors="ignore")
+        reader = csv.reader(csv_file)
+        print(reader)
+        data = list(reader) 
+        print(data)
+        contact_list=[]
+        contact_dict=[]
+        for row in data:
+          
+                print(row)
+                Product.objects.create(
+                    title=row[0],
+                    selling_price=row[1],
+                    discounted_price=row[2],
+                    description=row[3],
+                    brand=row[4],
+                    specifications=row[5],           
+                                
+                    )
+                return Response('Data stored')
+                
+                    
+                
+                
+                
+                    
+
 
 class Profile_Retrieve_View(generics.RetrieveAPIView):
     queryset = Tokens.objects.all()
     serializer_class = TokenSerializer
     permission_classes = [AllowAny,]
     
-    def retrieve(self, request, id):
-        print(id)
-        #if self.request.user:
-            #print(self.request.user.id)
-        logged_in_user_query = Tokens.objects.get(id=id)  # (id=self.kwargs["id"])
-        print(logged_in_user_query)
-        print(logged_in_user_query.user)
-        print(logged_in_user_query.tokens)
-        if logged_in_user_query.tokens == 0:
-            return redirect('http://127.0.0.1:8000/space/purchased_subcription_create/')
-        elif logged_in_user_query.tokens > 0:
-            logged_in_user_query.tokens = logged_in_user_query.tokens - 1  
-            logged_in_user_query.save()
-            try:
-                query = Tokens.objects.get(id=self.kwargs["id"])  # id=self.request.user.id
-                serializer = self.get_serializer(query)
-                #print(query)
-                return Response(serializer.data, status=status.HTTP_200_OK)
-            except ObjectDoesNotExist:
-                return Response({"DOES_NOT_EXIST": "Does not exist"}, status=status.HTTP_404_NOT_FOUND)
+    def retrieve(self, request, *args, **kwargs):
+        
+        if self.request.user:
+            print(self.request.user.id)
+            logged_in_user_query = Tokens.objects.get(id=self.request.user.id)  # (id=self.kwargs["id"])
+            print(logged_in_user_query)
+            print(logged_in_user_query.user)
+            print(logged_in_user_query.tokens)
+            if logged_in_user_query.tokens == 0:
+                return redirect('http://127.0.0.1:8000/space/purchased_subcription_create/')
+            elif logged_in_user_query.tokens > 0:
+                logged_in_user_query.tokens = logged_in_user_query.tokens - 1  
+                logged_in_user_query.save()
+                try:
+                    query = Tokens.objects.get(id=self.kwargs["id"])  # id=self.request.user.id
+                    serializer = self.get_serializer(query)
+                    #print(query)
+                    return Response(serializer.data, status=status.HTTP_200_OK)
+                except ObjectDoesNotExist:
+                    return Response({"DOES_NOT_EXIST": "Does not exist"}, status=status.HTTP_404_NOT_FOUND)
         else:
             return Response({"NO_ACCESS": "Access Denied"}, status=status.HTTP_401_UNAUTHORIZED)
 
@@ -168,7 +218,7 @@ class Purchased_Subcription_View(generics.CreateAPIView):
             query = Pricing_Plan.objects.get(id=subscription)
             print(query.tokens) 
             obj1 = query.tokens
-            #query.tokens += subscription
+            
             user_name = serializer.data['user_name']
             print(user_name)
             query_user=Tokens.objects.get(id=user_name)
@@ -178,9 +228,7 @@ class Purchased_Subcription_View(generics.CreateAPIView):
             print(query_user.tokens)
             query_user.save()
          
-            # for i in query_user:
-            #     print(i) 
-            #query_user.tokens += query.tokens
+            
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -189,5 +237,47 @@ class TokenView(CreateAPIView):
     queryset = Tokens.objects.all()
     serializer_class = TokenSerializer
 
+def search(request):
+    if request.method == 'GET':
+        query = request.GET.get('q')
+        print(query)
+        submitbutton = request.GET.get('submit')
+        #print(submitbutton)
+        if query is not None:
+            lookups = (Q(full_name__icontains=query) | Q(location__icontains=query) | Q(school__icontains=query) | Q(company__icontains=query) | Q(gender__icontains=query) | Q(email__icontains=query) | Q(linkdin__icontains=query) | Q(github__icontains=query) | Q(Twitter__icontains=query))
+            data = User_Profile.objects.filter(lookups)
+            #print(data)
+            context={'data':data,
+                    'submitbutton':submitbutton}
+            print(context)
+            return render(request,'profile.html',context)
+        else:
+            return render(request,'profile.html')
+    else:
+        return render(request,'profile.html')
 
+def GetContact(request, id):
+    profile = User_Profile.objects.get(id=id)
+    print(profile)
+    Contacts(
+        full_name = profile.full_name,
+        stream = profile.stream,
+        school = profile.school,
+        degree = profile.degree,
+        job_title = profile.job_title,
+        skills = profile.skills,
+        experiance = profile.experiance,
+        company = profile.company,
+        phone = profile.phone,
+        email = profile.email,
+        linkdin = profile.linkdin,
+        Twitter = profile.Twitter,
+        github = profile.github,
+        gender = profile.gender,
+        DOB = profile.DOB,
+        profile_photo = profile.profile_photo,
+        location = profile.location,
+        alt_phone = profile.alt_phone,
+    )
+    return render(request, 'contact.html', {'profile':profile})    
 

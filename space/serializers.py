@@ -102,3 +102,8 @@ class TokenSerializer(serializers.ModelSerializer):
     class Meta:
         model= Tokens
         fields = ['user','tokens']
+
+class ProductSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = ['title', 'selling_price', 'discounted_price', 'description', 'brand', 'specifications']
